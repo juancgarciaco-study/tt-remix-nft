@@ -1,0 +1,17 @@
+# Dependency directories
+node_modules/
+build/
+
+# Optional truffle files
+truffle-config.js
+truffle.js
+
+# Environment variables
+.env
+
+# Ignore all .sol.js files
+*.sol.js
+
+# Ignore specific solidity files or directories
+artifacts/
+.deps/
