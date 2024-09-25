@@ -12,6 +12,9 @@ truffle.js
 # Ignore all .sol.js files
 *.sol.js
 
+# Ignore all .sol.bak files
+*.sol.bak
+
 # Ignore specific solidity files or directories
 artifacts/
 .deps/
