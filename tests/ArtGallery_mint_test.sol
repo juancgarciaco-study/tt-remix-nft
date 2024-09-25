@@ -4,14 +4,14 @@ pragma solidity >=0.4.22 <0.9.0;
 
 // This import is automatically injected by Remix
 import "remix_tests.sol";
+import "remix_accounts.sol";
 
 // This import is required to use custom transaction context
 // Although it may fail compilation in 'Solidity Compiler' plugin
 // But it will work fine in 'Solidity Unit Testing' plugin
-import "remix_accounts.sol";
-import "hardhat/console.sol";
 
 import "../contracts/ArtGallery.sol";
+import "hardhat/console.sol";
 
 // File name has to end with '_test.sol', this file can contain more than one testSuite contracts
 contract testSuite {
@@ -53,8 +53,13 @@ contract testSuite {
         console.log("<--------------------------------------->");
         console.log("acc_owner_0", acc_owner_0);
         console.log("msg.sender", msg.sender);
-        Assert.equal(msg.sender, TestsAccounts.getAccount(0), "wrong sender in testMindToken");
+        Assert.equal(
+            msg.sender,
+            TestsAccounts.getAccount(0),
+            "wrong sender in testMindToken"
+        );
         try
+            
             foo.mintArtwork(
                 acc_art_1,
                 1,
@@ -70,7 +75,10 @@ contract testSuite {
             console.log("reason", reason);
         }
 
-        console.log("Token", Token);
+        console.log("Token Id:", Token);
+        console.log("Token Name:", foo.getTokenName(Token));
+        console.log("Token Owner:", foo.ownerOf(Token));
+        console.log("foo.owner:", foo.owner());
 
         Assert.ok(2 == 2, "should be true");
     }

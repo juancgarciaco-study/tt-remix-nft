@@ -24,7 +24,8 @@ contract ArtGallery is ERC721URIStorage, Ownable {
     mapping(uint256 => Artist) public artists;
     mapping(uint256 => Gallery) public galleries;
 
-    uint256 public projectCommissionPercentage = 5; // Project creators' commission
+    uint256 public projectCommissionPercentage = 2; // Project creators' commission
+    uint256 public curToken = 0; // Project creators' commission
 
     constructor(address initialOwner) 
     ERC721("ArtGallery", "ART")
@@ -67,7 +68,7 @@ contract ArtGallery is ERC721URIStorage, Ownable {
             commissionPercentage
         );
 
-        return newItemId;
+        return curToken = newItemId;
     }
 
     function buyArtwork(uint256 tokenId) public payable {

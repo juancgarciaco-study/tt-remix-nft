@@ -18,3 +18,4 @@ truffle.js
 # Ignore specific solidity files or directories
 artifacts/
 .deps/
+.states/
