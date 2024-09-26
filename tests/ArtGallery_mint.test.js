@@ -7,8 +7,8 @@ describe('ArtGallery-Flow', function () {
     before(async function () {
         console.log('--- before ----------------------------------------')
         const [
-            owner_1,
-            owner_2,
+            contr_owner,
+            proj_owner,
             acc_art_1,
             acc_art_2,
             acc_gall_1,
@@ -16,11 +16,13 @@ describe('ArtGallery-Flow', function () {
             buyer_1,
             buyer_2,
         ] = await ethers.getSigners()
-        owner = owner_2
+        owner = proj_owner
 
+        /*
         const signer = new ethers.providers.Web3Provider(
             web3Provider
         ).getSigner()
+        */
 
         // const signer_add = await signer.getAddress()
         // console.log('signer_add: ' + signer_add)
@@ -40,7 +42,7 @@ describe('ArtGallery-Flow', function () {
         Foo = new ethers.ContractFactory(
             metadata.abi,
             metadata.data.bytecode.object,
-            signer
+            contr_owner
         )
 
         //*** deploying ***/
@@ -57,8 +59,8 @@ describe('ArtGallery-Flow', function () {
     it('minting NFT', async function () {
         console.log('--- minting NFT ----------------------------------------')
         const [
-            owner_1,
-            owner_2,
+            contr_owner,
+            proj_owner,
             acc_art_1,
             acc_art_2,
             acc_gall_1,
@@ -94,8 +96,8 @@ describe('ArtGallery-Flow', function () {
         console.log('--- selling NFT ----------------------------------------')
         //*** buying-1 ***/
         const [
-            owner_1,
-            owner_2,
+            contr_owner,
+            proj_owner,
             acc_art_1,
             acc_art_2,
             acc_gall_1,
