@@ -27,9 +27,9 @@ contract ArtGallery is ERC721URIStorage, Ownable {
     uint256 public projectCommissionPercentage = 2; // Project creators' commission
     uint256 public curToken = 0; // Project creators' commission
 
-    constructor(address initialOwner) 
-    ERC721("ArtGallery", "ART")
-    Ownable(initialOwner)
+    constructor(address initialOwner)
+        ERC721("ArtGallery", "ART")
+        Ownable(initialOwner)
     {
         console.log("ArtGallery.ctor -> initialOwner", initialOwner);
     }
@@ -41,16 +41,14 @@ contract ArtGallery is ERC721URIStorage, Ownable {
         uint256 commissionPercentage,
         string memory tokenURI,
         string memory tokenName
-    ) public 
-    onlyOwner 
-    returns (uint256) {
+    ) public onlyOwner returns (uint256) {
         console.log("ArtGallery.mintArtwork -> msg.sender", msg.sender);
         require(
             royaltyPercentage +
                 commissionPercentage +
                 projectCommissionPercentage <=
-                100,
-            "Total percentage exceeds 100"
+                50,
+            "Total percentage exceeds 50 percent"
         );
 
         _tokenIds.increment();
@@ -67,6 +65,8 @@ contract ArtGallery is ERC721URIStorage, Ownable {
             payable(galleryWallet),
             commissionPercentage
         );
+
+        _transfer(ownerOf(newItemId), artistWallet, newItemId);
 
         return curToken = newItemId;
     }
