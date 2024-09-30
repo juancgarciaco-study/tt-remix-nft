@@ -38,7 +38,14 @@ contract ArtGallery is ERC721URIStorage, Ownable {
     mapping(uint256 => Gallery) public galleries;
 
     uint256 public projectCommissionPercentage = 2; // Project creators' commission
-    uint256 public curToken = 0; // Project creators' commission
+    uint256 public curToken = 0; // last token created
+
+    event ArtworkMinted(
+        uint256 indexed tokenId,
+        address artist,
+        address gallery
+    );
+    event ArtworkPurchased(uint256 indexed tokenId, address buyer);
 
     constructor(address initialOwner)
         ERC721("ArtGallery", "ART")
@@ -52,7 +59,7 @@ contract ArtGallery is ERC721URIStorage, Ownable {
      * @param artistWallet The wallet of the artist.
      * @param artistRoyaltyPercentage The royalty percentage of the artist.
      * @param galleryWallet The wallet of the gallery.
-     * @param galleyRoyaltyPercentage The royalty percentage of the gallery.
+     * @param galleryRoyaltyPercentage The royalty percentage of the gallery.
      * @param tokenURI The URI of the artwork.
      * @param tokenName The name of the artwork.
      * @return The ID of the minted artwork.
@@ -61,20 +68,22 @@ contract ArtGallery is ERC721URIStorage, Ownable {
         address artistWallet,
         uint256 artistRoyaltyPercentage,
         address galleryWallet,
-        uint256 galleyRoyaltyPercentage,
+        uint256 galleryRoyaltyPercentage,
         string memory tokenURI,
         string memory tokenName
     ) public onlyOwner returns (uint256) {
         // console.log("ArtGallery.mintArtwork -> msg.sender", msg.sender);
         require(
-            artistRoyaltyPercentage + galleyRoyaltyPercentage + projectCommissionPercentage <=
+            artistRoyaltyPercentage +
+                galleryRoyaltyPercentage +
+                projectCommissionPercentage <=
                 50,
             "Total percentage exceeds 50 percent"
         );
 
         _tokenIds.increment();
         uint256 newItemId = _tokenIds.current();
-        _mint(msg.sender, newItemId);
+        _safeMint(msg.sender, newItemId);
         _setTokenURI(newItemId, tokenURI);
 
         artists[newItemId] = Artist(
@@ -82,9 +91,15 @@ contract ArtGallery is ERC721URIStorage, Ownable {
             artistRoyaltyPercentage,
             tokenName
         );
-        galleries[newItemId] = Gallery(payable(galleryWallet), galleyRoyaltyPercentage);
+        galleries[newItemId] = Gallery(
+            payable(galleryWallet),
+            galleryRoyaltyPercentage
+        );
 
         _transfer(ownerOf(newItemId), artistWallet, newItemId);
+
+        // Emit the event after minting the artwork
+        emit ArtworkMinted(newItemId, artistWallet, galleryWallet);
 
         return curToken = newItemId;
     }
@@ -116,6 +131,9 @@ contract ArtGallery is ERC721URIStorage, Ownable {
         payable(ownerOf(tokenId)).transfer(sellerEarnings);
 
         _transfer(ownerOf(tokenId), msg.sender, tokenId);
+
+        // Emit the event after purchasing the artwork
+        emit ArtworkPurchased(tokenId, msg.sender);
     }
 
     /*
