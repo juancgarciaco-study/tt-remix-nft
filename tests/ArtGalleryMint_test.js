@@ -1,32 +1,9 @@
 const {expect} = require('chai')
 const {ethers} = require('hardhat')
 
-describe('ArtGallery-Flow', function () {
-    let Foo, foo
-    let w_web_owner // app site owner
-    let w_contract_owner // app contract owner
-    let w_art_1 // artist owner 1
-    let w_art_2 // artist owner 2
-    let w_gall_1 // gallery owner 1
-    let w_gall_2 // gallery owner 2
-    let w_buyer_1 // buyer 1
-    let w_buyer_2 // buyer 2
-    let w_buyer_3 // buyer 3
-
-    const assignWallets = async () => {
-        const [w_0, w_1, w_2, w_3, w_4, w_5, w_6, w_7, w_8, w_9] =
-            await ethers.getSigners()
-
-        w_web_owner = w_9
-        w_contract_owner = w_1
-        w_art_1 = w_2
-        w_art_2 = w_3
-        w_gall_1 = w_4
-        w_gall_2 = w_5
-        w_buyer_1 = w_6
-        w_buyer_2 = w_7
-        w_buyer_3 = w_8
-    }
+describe('ArtGallery Contract', function () {
+    let artGallery
+    let deployer, owner, artist, gallery, buyer
 
     const getBalance = async (address) =>
         await ethers.provider.getBalance(address)
@@ -42,23 +19,17 @@ describe('ArtGallery-Flow', function () {
         if (title) {
             console.warn(title)
         }
-        await getBalanceConsole('w_web_owner', w_web_owner.address)
-        await getBalanceConsole('w_contract_owner', w_contract_owner.address)
-        await getBalanceConsole('w_art_1', w_art_1.address)
-        // await getBalanceConsole('w_art_2', w_art_2.address)
-        await getBalanceConsole('w_gall_1', w_gall_1.address)
-        // await getBalanceConsole('w_gall_2', w_gall_2.address)
-        await getBalanceConsole('w_buyer_1', w_buyer_1.address)
-        await getBalanceConsole('w_buyer_2', w_buyer_2.address)
-        await getBalanceConsole('w_buyer_3', w_buyer_3.address)
+        await getBalanceConsole('w_art_1', artist.address)
+        await getBalanceConsole('w_gall_1', gallery.address)
+        await getBalanceConsole('w_buyer_1', buyer.address)
+        await getBalanceConsole('w_owner', owner.address)
+        await getBalanceConsole('w_web', deployer.address)
     }
 
-    before(async function () {
-        await assignWallets()
-
-        console.error('--- before-method >>')
-
-        // Make sure contract is compiled and artifacts are generated
+    beforeEach(async function () {
+        // Deploy contract before each test
+        ;[deployer, owner, artist, gallery, buyer] = await ethers.getSigners()
+        // const ArtGallery = await ethers.getContractFactory('ArtGallery', deployer)
         const metadata = JSON.parse(
             await remix.call(
                 'fileManager',
@@ -66,72 +37,188 @@ describe('ArtGallery-Flow', function () {
                 'contracts/artifacts/ArtGallery.json'
             )
         )
-
-        Foo = new ethers.ContractFactory(
+        const ArtGallery = new ethers.ContractFactory(
             metadata.abi,
             metadata.data.bytecode.object,
-            w_web_owner
+            deployer
         )
-
-        // await showBalances('balances before')
-        // starting and assigning owner
-        foo = await Foo.deploy(w_contract_owner.address)
-        let deploy = await foo.deployed()
-        await deploy.deployTransaction.wait()
-        console.log('deploy> ->', deploy.deployTransaction)
-        console.log('tokenId> ->', ethers.utils.formatUnits(deploy.deployTransaction.gasPrice, 18))
-        // await showBalances('balances after')
-
-        console.error('--- before-method <<')
-        console.log(' ')
-        console.log(' ')
+        artGallery = await ArtGallery.deploy(owner.address)
+        await artGallery.deployed()
     })
 
-    it('zero test', async function () {
-        console.log('foo -> contract Address: ' + foo.address)
-        console.log('foo -> contract owner: ' + (await foo.owner()))
+    describe('Minting Artwork', function () {
+        it('should successfully mint artwork', async function () {
+            const tx = await artGallery
+                .connect(owner)
+                .mintArtwork(
+                    artist.address,
+                    10,
+                    gallery.address,
+                    5,
+                    'https://example.com/art.json',
+                    'Artwork 1'
+                )
 
-        expect(w_web_owner.address).to.not.equal(await foo.owner())
-        expect(w_contract_owner.address).to.equal(await foo.owner())
+            const receipt = await tx.wait()
+            const newTokenId = receipt.events[0].args.tokenId // Assuming it's the first event
+            console.info(newTokenId)
+
+            expect(await artGallery.ownerOf(newTokenId)).to.equal(
+                artist.address
+            )
+            expect(await artGallery.getTokenName(newTokenId)).to.equal(
+                'Artwork 1'
+            )
+        })
+
+        it('should fail when total royalties exceed 50%', async function () {
+            await expect(
+                artGallery
+                    .connect(owner)
+                    .mintArtwork(
+                        artist.address,
+                        30,
+                        gallery.address,
+                        25,
+                        'https://example.com/art.json',
+                        'Artwork 2'
+                    )
+            ).to.be.revertedWith('Total percentage exceeds 50 percent')
+        })
     })
 
-    return;
-    const tx_mint_1 = 'minting NFT 1 '
-    it(tx_mint_1, async function () {
-        console.error(`--- ${tx_mint_1} >>`)
+    describe('Buying Artwork', function () {
+        beforeEach(async function () {
+            // Mint an artwork for testing buy functionality
+            await artGallery
+                .connect(owner)
+                .mintArtwork(
+                    artist.address,
+                    10,
+                    gallery.address,
+                    5,
+                    'https://example.com/art.json',
+                    'Artwork 1'
+                )
+        })
 
-        //--- minting ---/
-        // await showBalances('balances before')
+        it('should successfully buy artwork', async function () {
+            const initialArtistBalance = await ethers.provider.getBalance(
+                artist.address
+            )
+            const initialGalleryBalance = await ethers.provider.getBalance(
+                gallery.address
+            )
+            const initialOwnerBalance = await ethers.provider.getBalance(
+                owner.address
+            )
+            //await showBalances()
 
-        // connect with w_contract_owner wallet
-        const fooTx = foo.connect(w_contract_owner)
+            const tx = await artGallery
+                .connect(buyer)
+                .buyArtwork(1, {value: ethers.utils.parseEther('1')})
+            await await tx.wait()
 
-        // run mint ArtWork
-        const mintTx = await fooTx.mintArtwork(
-            w_art_1.address,
-            4,
-            w_gall_1.address,
-            1,
-            'https://bronze-magnificent-crocodile-218.mypinata.cloud/ipfs/QmcvS3atcfaCrPSNVa8RvrpnVGV4teKQHE4YoTmUVf3DgS',
-            'TTJK1'
-        )
-        await mintTx.wait()
+            const newArtistBalance = await ethers.provider.getBalance(
+                artist.address
+            )
+            const newGalleryBalance = await ethers.provider.getBalance(
+                gallery.address
+            )
+            const newOwnerBalance = await ethers.provider.getBalance(
+                owner.address
+            )
+            //showBalances()
+            let earning = ethers.utils.parseEther(
+                (Math.round((1.0 - 0.02 - 0.05) * 100) / 100).toString()
+            )
+            // console.log(ethers.utils.formatUnits(newArtistBalance))
+            // console.log(ethers.utils.formatUnits(earning))
+            expect(newArtistBalance).to.equal(initialArtistBalance.add(earning))
+            expect(newGalleryBalance).to.equal(
+                initialGalleryBalance.add(ethers.utils.parseEther('0.05'))
+            )
+            expect(newOwnerBalance).to.equal(
+                initialOwnerBalance.add(ethers.utils.parseEther('0.02'))
+            )
+        })
+        it('should fail buying artwork that does not exist', async function () {
+            await expect(
+                artGallery.connect(buyer).buyArtwork(999) // Non-existent token ID
+            ).to.be.revertedWith('Artwork does not exist')
+        })
 
-        console.log('mintTx> ->', mintTx)
-        console.log('tokenId> ->', ethers.utils.formatUnits(mintTx.gasPrice, mintTx.nonce))
+        it('should fail buying artwork with zero payment', async function () {
+            await expect(
+                artGallery.connect(buyer).buyArtwork(1, {value: 0})
+            ).to.be.revertedWith('Payment must be greater than 0')
+        })
+    })
+    // return true
 
-        let tokenId = await fooTx.curToken()
+    describe('Get Token Name', function () {
+        beforeEach(async function () {
+            await artGallery
+                .connect(owner)
+                .mintArtwork(
+                    artist.address,
+                    10,
+                    gallery.address,
+                    5,
+                    'https://example.com/art.json',
+                    'Artwork 1'
+                )
+        })
 
-        expect(tokenId).to.equal(ethers.utils.formatUnits(tokenId, 0))
-        console.log('tokenId> ->', ethers.utils.formatUnits(tokenId, 0))
-        console.log('foo.getTokenName(1): ', await fooTx.getTokenName(tokenId))
-        console.log('foo.tokenOwner> ->', await foo.ownerOf(tokenId))
-        console.log('fooTx.tokenOwner> ->', await fooTx.ownerOf(tokenId))
+        it('should successfully retrieve token name', async function () {
+            const tokenName = await artGallery.connect(owner).getTokenName(1)
+            expect(tokenName).to.equal('Artwork 1')
+        })
 
-        await showBalances('balances after')
-        console.error(`--- ${tx_mint_1} <<`)
-        console.log(' ')
-        console.log(' ')
+        it('should fail retrieving token name for a non-existent token', async function () {
+            await expect(
+                artGallery.connect(owner).getTokenName(999)
+            ).to.be.revertedWith('Token does not exist')
+        })
     })
 
+    describe('Event Emissions', function () {
+        it('should emit ArtworkMinted event on successful minting', async function () {
+            await expect(
+                artGallery
+                    .connect(owner)
+                    .mintArtwork(
+                        artist.address,
+                        10,
+                        gallery.address,
+                        5,
+                        'https://example.com/art.json',
+                        'Artwork 1'
+                    )
+            )
+                .to.emit(artGallery, 'ArtworkMinted')
+                .withArgs(1, artist.address, gallery.address)
+        })
+
+        it('should emit ArtworkPurchased event on successful purchase', async function () {
+            await artGallery
+                .connect(owner)
+                .mintArtwork(
+                    artist.address,
+                    10,
+                    gallery.address,
+                    5,
+                    'https://example.com/art.json',
+                    'Artwork 1'
+                )
+
+            await expect(
+                artGallery
+                    .connect(buyer)
+                    .buyArtwork(1, {value: ethers.utils.parseEther('1')})
+            )
+                .to.emit(artGallery, 'ArtworkPurchased')
+                .withArgs(1, buyer.address)
+        })
+    })
 })

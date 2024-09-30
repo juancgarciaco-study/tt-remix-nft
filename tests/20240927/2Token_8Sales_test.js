@@ -16,8 +16,21 @@ describe('ArtGallery-Flow', function () {
     ///----
 
     const assignWallets = async () => {
-        const [w_0, w_1, w_2, w_3, w_4, w_5, w_6, w_7, w_8, w_9, w_10, w_11, w_12] =
-            await ethers.getSigners()
+        const [
+            w_0,
+            w_1,
+            w_2,
+            w_3,
+            w_4,
+            w_5,
+            w_6,
+            w_7,
+            w_8,
+            w_9,
+            w_10,
+            w_11,
+            w_12,
+        ] = await ethers.getSigners()
 
         w_web_owner = w_11
         w_deploy_owner = w_12
@@ -108,11 +121,11 @@ describe('ArtGallery-Flow', function () {
             'https://bronze-magnificent-crocodile-218.mypinata.cloud/ipfs/QmcvS3atcfaCrPSNVa8RvrpnVGV4teKQHE4YoTmUVf3DgS',
             'TTJK1'
         )
-        await mintTx.wait()
+        const receipt = await mintTx.wait()
 
-        let _tokenId = await fooTx.curToken()
-        let _tokenIdStr = ethers.utils.formatUnits(_tokenId, 0)
-        let _tokenName = await fooTx.getTokenName(_tokenId)
+        const _tokenId = receipt.events[0].args.tokenId // Assuming it's the first event
+        const _tokenIdStr = ethers.utils.formatUnits(_tokenId, 0)
+        const _tokenName = await fooTx.getTokenName(_tokenId)
         _tokenOwner = await foo.ownerOf(_tokenId)
 
         expect(_tokenId).to.equal(_tokenIdStr)
@@ -260,13 +273,13 @@ describe('ArtGallery-Flow', function () {
             w_gall_1.address,
             3,
             'https://bronze-magnificent-crocodile-218.mypinata.cloud/ipfs/QmcvS3atcfaCrPSNVa8RvrpnVGV4teKQHE4YoTmUVf3DgS',
-            'TTJK1'
+            'TTJK2'
         )
-        await mintTx.wait()
+        const receipt = await mintTx.wait()
 
-        let _tokenId = await fooTx.curToken()
-        let _tokenIdStr = ethers.utils.formatUnits(_tokenId, 0)
-        let _tokenName = await fooTx.getTokenName(_tokenId)
+        const _tokenId = receipt.events[0].args.tokenId // Assuming it's the first event
+        const _tokenIdStr = ethers.utils.formatUnits(_tokenId, 0)
+        const _tokenName = await fooTx.getTokenName(_tokenId)
         _tokenOwner = await foo.ownerOf(_tokenId)
 
         expect(_tokenId).to.equal(_tokenIdStr)
