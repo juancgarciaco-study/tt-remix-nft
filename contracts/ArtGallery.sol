@@ -38,7 +38,6 @@ contract ArtGallery is ERC721URIStorage, Ownable {
     mapping(uint256 => Gallery) public galleries;
 
     uint256 public projectCommissionPercentage = 2; // Project creators' commission
-    uint256 public curToken = 0; // last token created
 
     event ArtworkMinted(
         uint256 indexed tokenId,
@@ -101,7 +100,7 @@ contract ArtGallery is ERC721URIStorage, Ownable {
         // Emit the event after minting the artwork
         emit ArtworkMinted(newItemId, artistWallet, galleryWallet);
 
-        return curToken = newItemId;
+        return newItemId;
     }
 
     /*
